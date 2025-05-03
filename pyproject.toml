@@ -2,13 +2,14 @@
 name = "kafka-python-lab"
 version = "0.1.0"
 description = """
-    A hands-on exploration of Apache Kafka using quixstreams in Python.
-    This repository contains practical examples and patterns for event 
-    streaming applications to demonstrate producer/consumer workflows, 
-    stream processing, and real-time data handling.
+    A hands-on exploration of Apache Kafka using the kafka-python 
+    library in Python. This repository contains practical examples 
+    and patterns for event streaming applications to demonstrate 
+    producer/consumer workflows, stream processing, and real-time
+    data handling.
     """
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "confluent-kafka>=2.10.0",
+    "kafka-python>=2.2.3",
 ]
