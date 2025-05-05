@@ -3,7 +3,7 @@ from kafka import KafkaProducer
 from kafka.errors import TopicAlreadyExistsError
 import random
 from datetime import datetime, date, timedelta
-from typing import List, Dict, Any
+from typing import List, Dict, Tuple, Any
 import json
 
 
@@ -100,4 +100,99 @@ def send_data(producer: KafkaProducer, topic: str, message: Dict) -> None:
     except Exception as e:
         print(f"Error sending message: {e}")
     producer.flush()
-    
+
+
+def analyze_weather_data(
+    weather_data: List[Dict[str, Any]],
+) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """Analyzes weather data to calculate statistics and generate critical notifications.
+
+    Args:
+        weather_data: A list of dictionaries, where each dictionary represents
+                      hourly weather data with 'time', 'temperature', 'wind_speed',
+                      and 'cloud_cover' keys.
+
+    Returns:
+        A tuple containing two lists:
+        - A list of dictionaries, each containing daily weather statistics.
+        - A list of dictionaries, each representing a critical weather notification.
+    """
+
+    # Validate input
+    if not weather_data or "time" not in weather_data[0]:
+        print("Error: The first item in the list must contain a 'time' key")
+        return [], []  # Return empty lists as per the return type hint
+
+    # Extract date from the first item
+    try:
+        date_str = weather_data[0]["time"].split(" ")[0]
+    except (KeyError, IndexError, AttributeError):
+        return {"error": "Invalid 'time' format in the first item"}
+
+    # Extract data
+    temperatures = [hour.get("temperature") for hour in weather_data]
+    wind_speeds = [hour.get("wind_speed") for hour in weather_data]
+    cloud_covers = [hour.get("cloud_cover") for hour in weather_data]
+
+    # Calculate relevant statistics
+    stats = [
+        {
+            "date": date_str,
+            "temperature": {
+                "min": min(temperatures),
+                "max": max(temperatures),
+                "avg": sum(temperatures) / len(temperatures),
+                "range": max(temperatures) - min(temperatures),
+            },
+            "wind_speed": {
+                "avg": sum(wind_speeds) / len(wind_speeds) if wind_speeds else None,
+                "max": max(wind_speeds) if wind_speeds else None,
+                "hours_above_5": (
+                    sum(1 for speed in wind_speeds if speed > 5) if wind_speeds else 0
+                ),
+            },
+            "cloud_cover": {
+                "avg": sum(cloud_covers) / len(cloud_covers) if cloud_covers else None,
+                "hours_clear": (
+                    sum(1 for cover in cloud_covers if cover < 20)
+                    if cloud_covers
+                    else 0
+                ),
+                "hours_overcast": (
+                    sum(1 for cover in cloud_covers if cover > 80)
+                    if cloud_covers
+                    else 0
+                ),
+            },
+        }
+    ]
+
+    # Generate critical notifications
+    notifications = []
+
+    # Temperature warnings
+    if max(temperatures) > 35:
+        notifications.append(
+            {
+                "date": date_str,
+                "notification": "HEAT ALERT: Temperature exceeds 35°C today",
+            }
+        )
+    if max(temperatures) - min(temperatures) > 15:
+        notifications.append(
+            {
+                "date": date_str,
+                "notification": f"FLUCTUATION ALERT: Large temperature fluctuation of {max(temperatures) - min(temperatures):.1f}°C",
+            }
+        )
+
+    # Wind warnings
+    if wind_speeds and max(wind_speeds) > 10:
+        notifications.append(
+            {
+                "date": date_str,
+                "notification": f"HIGH WIND ALERT: Wind speeds reach {max(wind_speeds):.1f} km/h",
+            }
+        )
+
+    return stats, notifications
