@@ -1,8 +1,10 @@
 from kafka.admin import KafkaAdminClient, NewTopic
+from kafka import KafkaProducer
 from kafka.errors import TopicAlreadyExistsError
 import random
 from datetime import datetime, date, timedelta
 from typing import List, Dict, Any
+import json
 
 
 def create_topics(admin_client: KafkaAdminClient, topics_names: List[str]) -> None:
@@ -80,3 +82,22 @@ def generate_weather_data(date: date) -> List[Dict[str, Any]]:
         )
 
     return weather_data
+
+
+def send_data(producer: KafkaProducer, topic: str, message: Dict) -> None:
+    """Send data to a Kafka topic.
+
+    Args:
+        producer: An instance of KafkaProducer to use for sending data.
+        topic: The name of the Kafka topic to send data to.
+        data: A dictionary representing the data to be sent.
+
+    Returns:
+        None
+    """
+    try:
+        producer.send(topic, value=json.dumps(message).encode("utf-8"))
+    except Exception as e:
+        print(f"Error sending message: {e}")
+    producer.flush()
+    
