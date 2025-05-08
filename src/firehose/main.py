@@ -4,7 +4,8 @@ import json
 
 producer = KafkaProducer(
     bootstrap_servers='localhost:9092',
-    client_id='firehose-producer'
+    client_id='firehose-producer',
+    compression_type='gzip',
 )
 
 def main():
